@@ -1,0 +1,7 @@
+# key: fr
+# name: frame
+# uuid: fr
+# --
+\begin{frame}{$2}{$3}
+        ${0:`%`}
+\end{frame}

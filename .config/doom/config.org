@@ -1,0 +1,1474 @@
+#+TITLE:   klu's Configuration
+#+DATE:    十月 17, 2020
+#+SINCE:   1.0
+#+STARTUP: inlineimages content
+#+PROPERTY: header-args :tangle config.el
+
+* 使用的配置
+如何 debug 可参考 doom 文档
+https://github.com/hlissner/doom-emacs/blob/develop/docs/getting_started.org#how-to-determine-the-origin-of-a-bug
+
+配置主要参考
+https://github.com/sunnyhasija/DOOMEmacs/blob/master/README.org
+
+这些函数、宏可以用来配置 Doom：
+- `load!' for loading external *.el files relative to this one
+- `use-package!' for configuring packages
+- `after!' for running code after a package has loaded
+- `add-load-path!' for adding directories to the `load-path', relative to
+  this file. Emacs searches the `load-path' when you load packages with
+  `require' or `use-package'.
+- `map!' for binding new keys
+
+To get information about any of these functions/macros, move the cursor over
+the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
+This will open documentation for it, including demos of how they are used.
+** 姓名和电子邮件
+如 GPG 配置、电子邮件客户端、文件模板、片段等功能会使用这些来做身份识别。
+#+begin_src emacs-lisp
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+;; Some functionality uses this to identify you, e.g. GPG configuration, email
+;; clients, file templates and snippets.
+(setq user-full-name "klu"
+      user-mail-address "k_foreign@outlook.com")
+#+end_src
+** 字体
+Doom exposes five (optional) variables for controlling fonts in Doom. Here are the three important ones:
+    `doom-font' 等宽字体
+    `doom-variable-pitch-font' 不等宽字体
+    `doom-big-font' – used for `doom-big-font-mode'; use this for presentations or streaming.
+实验发现，doom-unicode-font 如果 *不* 设置 size 的话，在 helm-bibtex 中的中文不会像 doom-unicode-font 文档说的那样继承默认字体大小，而是使用英文字符大小的两倍，排列是整齐的。
+#+BEGIN_SRC emacs-lisp
+(setq doom-font (font-spec :family "Source Code Pro" :size 20)
+      doom-variable-pitch-font (font-spec :family "Source Code Variable" :size 18)
+      doom-unicode-font (font-spec :family "更纱黑体 SC" )
+      )
+#+END_SRC
+| this             | 中文字体就出问题 |
+| 中文字体就出问题 | english          |
+** 编码
+也不知道为啥，如果把 language environment 设置为 'utf-8 的话，中文字体就出问题，doom-font 不起作用。
++这里是仿照 sis 的制作者的[[https://github.com/laishulu/conf/blob/master/emacs/doom/encoding.el][配置]]做的。+
+使用了上述的配置之后，发现写中文的时候非常卡，所以参考 https://github.com/hick/emacs-chinese#emacs-的各种字符集 的配置，提升了速度。
+#+BEGIN_SRC emacs-lisp
+(set-language-environment "UTF-8")
+(set-default-coding-systems 'utf-8)
+(set-buffer-file-coding-system 'utf-8-unix)
+(set-clipboard-coding-system 'utf-8-unix)
+(set-file-name-coding-system 'utf-8-unix)
+(set-keyboard-coding-system 'utf-8-unix)
+(set-next-selection-coding-system 'utf-8-unix)
+(set-selection-coding-system 'utf-8-unix)
+(set-terminal-coding-system 'utf-8-unix)
+(setq locale-coding-system 'utf-8)
+(prefer-coding-system 'utf-8)
+
+;; (setq locale-coding-system 'utf-8)
+;; (set-terminal-coding-system 'utf-8)
+;; (set-keyboard-coding-system 'utf-8)
+;; (set-selection-coding-system 'utf-8)
+;; (prefer-coding-system 'utf-8)
+#+END_SRC
+** 窗口
+当分割窗口时，可以选择 buffer，使用 ivy 显示预览。
+#+BEGIN_SRC emacs-lisp
+(setq evil-vsplit-window-right t
+      evil-split-window-below t)
+(defadvice! prompt-for-buffer (&rest _)
+  :after '(evil-window-split evil-window-vsplit)
+  (+ivy/switch-buffer))
+(setq +ivy-buffer-preview t)
+
+(map! :leader "w d" #'kill-buffer-and-window
+              "w D" #'delete-window)         ; doom原本使用这个快捷键关闭窗口，现在加上杀死缓冲区的功能。
+(fringe-mode 8)                                       ; 窗口边缘宽度设为8
+#+end_src
+鼠标滑轮对应的窗口滚动设置小一点
+#+begin_src emacs-lisp
+(setq mouse-wheel-croll-amount
+      '(2
+        ((shift) . hscroll)
+        ((meta))
+        ((control) . text-scale)
+        ))
+#+end_src
+全屏
+#+BEGIN_SRC emacs-lisp
+(if (eq initial-window-system 'x)                 ; if started by emacs command or desktop file
+    (toggle-frame-maximized)
+  (toggle-frame-fullscreen))
+#+END_SRC
+** 网络代理和包库镜像
+#+BEGIN_SRC emacs-lisp
+(setq url-proxy-services
+      '(("no_proxy" . "^\\(localhost\\|10\\..*\\|192\\.168\\..*\\)")
+        ("http" . "127.0.0.1:8889")
+        ("https" . "127.0.0.1:8889")))
+(setq package-archives '(("gnu"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+                         ("org-cn". "http://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
+                         ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")))
+#+END_SRC
+** 导航工具 ivy
+*** 使用 hydra 显示 action
+由于[[https://github.com/abo-abo/swiper/issues/2694][这里的原因]]，ivy 显示 action 不全。
++这里使用链接里的方法：[[https://github.com/abo-abo/swiper/issues/2694#issuecomment-718681675][abo-abo/swiper#2694 Truncated list of actions]] 让 action 显示多列，从而让它显示完整。（可能也不太完整）+
+
+上面链接的方法无效，决定按[[https://github.com/abo-abo/swiper/issues/2694#issuecomment-708418422][这里]]使用 hydra
+doom 的 ivy 模块已经[[file:~/doom-emacs/modules/completion/ivy/config.el::ivy-read-action-function #'ivy-hydra-read-action][默认使用了]] ~ivy-hydra-read-action~ ，我不用再次设置了。
+#+begin_src emacs-lisp
+;; (setq ivy-read-action-function 'ivy-hydra-read-action)
+#+end_src
+
+*** 设置高度（按行数计量）
+#+begin_src emacs-lisp
+(setq ivy-height 12)
+#+end_src
+
+*** ivy-posframe
+#+begin_src emacs-lisp :tangle no
+(use-package! ivy-posframe
+  :config
+  (setq ivy-posframe-display-functions-alist
+        '((counsel-git-grep . ivy-display-function-fallback)
+          (counsel-grep . ivy-display-function-fallback)
+          (counsel-rg . ivy-display-function-fallback)
+          (counsel-describe-variable . ivy-display-function-fallback)
+          (counsel-describe-function . ivy-display-function-fallback)
+          (counsel-describe-face . ivy-display-function-fallback)
+          (complete-symbol . ivy-posframe-display-at-point)
+          (t               . +ivy-display-at-frame-center-near-bottom-fn)
+          ))
+  
+  ;; https://github.com/tumashu/ivy-posframe/issues/105#issuecomment-750370286
+  (defun my-ivy-posframe-get-size ()
+    "Set the ivy-posframe size according to the current frame."
+    (let ((height (or ivy-posframe-height (or ivy-height 10)))
+          (width (min (or ivy-posframe-width 200) (round (* .75 (frame-width))))))
+      (list :height height :width width :min-height height :min-width width)))
+
+  (setq ivy-posframe-size-function 'my-ivy-posframe-get-size)
+  )
+#+end_src
+*** ivy-rich 设置
+#+begin_src emacs-lisp
+(use-package! ivy-rich
+  :config
+  (setq ivy-rich-path-style 'relative)
+  (plist-delete! ivy-rich-display-transformers-list :counsel-M-x)
+  (plist-put! ivy-rich-display-transformers-list
+              'ivy-switch-buffer
+              '(:columns
+                ((ivy-switch-buffer-transformer (:width 0.25))
+                 (ivy-rich-switch-buffer-size (:width 7))
+                 (ivy-rich-switch-buffer-indicators (:width 4 :face error :align right))
+                 (ivy-rich-switch-buffer-major-mode (:width 0.1 :face warning))
+                 (ivy-rich-switch-buffer-project (:width 0.1 :face success))
+                 (ivy-rich-switch-buffer-path
+                  (:width (lambda (x)
+                            (ivy-rich-switch-buffer-shorten-path x (ivy-rich-minibuffer-width 0.1))))))
+                :predicate
+                (lambda (cand) (get-buffer cand)))
+              )
+  (progn
+    (ivy-rich-mode -1)
+    (ivy-rich-mode 1))
+  )
+#+end_src
+
+** word-wrap 关闭按词换行，以更好显示中文
+或许未来可以使用中文分词的包 + 按词换行，现在就这么设置吧
+#+begin_src emacs-lisp
+(add-hook 'org-mode-hook
+          (lambda nil
+            (setq word-wrap nil))
+          )
+#+end_src
+** 正则表达式 builder 默认语法设置
+https://www.masteringemacs.org/article/re-builder-interactive-regexp-builder
+这里介绍了 string 的语法相较于默认的 read 来说，不需要过多的反斜杠。
+emacs 中处理正则表达式的方法不受这个影响，这只影响 builder
+#+begin_src emacs-lisp
+(setq reb-re-syntax 'string)
+#+end_src
+** 其他基本设置
+#+BEGIN_SRC emacs-lisp
+(setq doom-theme 'modus-operandi
+      undo-limit 8000000              ; 提高 undo-limit 到 80Mb
+      evil-want-fine-undo t            ; 默认在插入模式下，所有更改都是一大块。这里改成更加颗粒化。
+      auto-save-default t              ; 自动保存，保存为临时文件
+      inhibit-compacting-font-caches t ; 如果有大量字符，将他们保存在内存中。
+      delete-by-moving-to-trash t      ; 删除时使用系统回收站
+      tab-width 4
+      uniquify-buffer-name-style 'forward
+      window-combination-resize t ; take new window space from all other windows (not just current)
+      x-stretch-cursor t ; 把光标宽度拉到字符宽度
+      large-file-warning-threshold 100000000
+      +latex-viewers '(pdf-tools okular)
+      doom-localleader-key ","
+      ;; https://stackoverflow.com/questions/24196020/how-to-stop-emacs-from-contaminating-the-clipboard
+      save-interprogram-paste-before-kill t
+      display-line-numbers-type nil ; 默认关闭行号
+)
+(setq-default line-spacing 0.2)                ; 行间距
+(delete-selection-mode 1)              ; 选择文字并插入文字时替换文本
+;; (global-subword-mode 1) ; CamelCase单词也认作单词
+(tooltip-mode 1)
+;; (auto-save-visited-mode 1) ; 自动保存，这个是能存到浏览中文件里的自动保存
+#+END_SRC
+
+=org-directory= 必须在 org 包加载之前设置。
+#+BEGIN_SRC emacs-lisp
+(setq org-directory "~/org_notebooks/")
+#+END_SRC
+** org 以及文献管理相关
+*** 默认隐藏属性抽屉（PROPERTIES DRAWER）
+#+begin_src emacs-lisp
+(add-hook 'org-mode-hook (lambda () (org-cycle-hide-drawers 'all)))
+#+end_src
+*** html 导出的头部
+#+begin_src emacs-lisp
+(setq org-html-head
+      "<link rel=\"stylesheet\" type=\"text/css\" href=\"src/readtheorg_theme/css/htmlize.css\"/>
+<link rel=\"stylesheet\" type=\"text/css\" href=\"src/readtheorg_theme/css/readtheorg.css\"/>
+<script type=\"text/javascript\" src=\"src/lib/js/jquery.min.js\"></script>
+<script type=\"text/javascript\" src=\"src/lib/js/bootstrap.min.js\"></script>
+<script type=\"text/javascript\" src=\"src/lib/js/jquery.stickytableheaders.min.js\"></script>
+<script type=\"text/javascript\" src=\"src/readtheorg_theme/js/readtheorg.js\"></script>
+")
+#+end_src
+*** evil 使用 F 切换 agenda-follow-mode
+#+begin_src emacs-lisp
+(after! org
+  (map! :map org-agenda-mode-map
+        :nm "F" #'org-agenda-follow-mode)
+  )
+#+end_src
+*** 打开网页使用 firefox.
+不知为何，使用 export-dispatcher 的导出并打开 html 文件的时候，无法打开，参考 https://emacs.stackexchange.com/questions/2387/browser-not-opening-when-exporting-html-from-org-mode 的方法，显式设置默认打开 html 文件的软件为 firefox
+#+begin_src emacs-lisp
+(after! org
+  (setq org-file-apps
+        '((remote . emacs)
+         (auto-mode . emacs)
+         (directory . emacs)
+         ("\\.mm\\'" . default)
+         ("\\.x?html?\\'" . "/usr/bin/firefox %s")
+         ("\\.pdf\\'" . default))
+        )
+  )
+#+end_src
+*** 使用 RET 的时候，扩展列表
+#+begin_src emacs-lisp :tangle no
+(add-hook 'org-mode-hook (lambda ()
+                           (map! :map org-mode-map
+                                 :i "RET" 'evil-org-return)
+                           ))
+#+end_src
+*** 表格的中英文图片对齐 valign
+#+begin_src elisp
+(add-hook 'org-mode-hook #'valign-mode)
+(setq valign-fancy-bar t)
+#+end_src
+
+*** latex-beamer 导出选项，添加 ctexbeamer
+#+begin_src elisp
+(push '("ctexbeamer" "\\documentclass{ctexbeamer}"
+        ("\\section{%s}" . "\\section*{%s}")
+        ("\\subsection{%s}" . "\\subsection*{%s}")
+        ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+      org-latex-classes)
+
+(push '("ctexart" "\\documentclass{ctexart}"
+        ("\\section{%s}" . "\\section*{%s}")
+        ("\\subsection{%s}" . "\\subsection*{%s}")
+        ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+      org-latex-classes)
+
+(push '("beamerarticle" ""
+        ("\\section{%s}" . "\\section*{%s}")
+        ("\\subsection{%s}" . "\\subsection*{%s}")
+        ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+      org-latex-classes)
+#+end_src
+*** latex 符号查看使用 pretty-mode，以及切换快捷键
+#+begin_src emacs-lisp
+(after! org
+  (add-hook 'org-mode-hook '+org-pretty-mode)
+  (map! :leader
+        :prefix "t"
+        :desc "pretty mode" "p" #'+org-pretty-mode))
+#+end_src
+*** latex 输入不使用 cdlatex
+#+begin_src emacs-lisp
+(use-package! org
+  :init
+  (remove-hook 'org-mode-hook 'org-cdlatex-mode) ;默认不使用cdlatex，我现在用auto-activating-snippets
+  )
+#+end_src
+*** latex 预览的自定义数学命令
+#+begin_src elisp
+(let* (
+      (default-header (eval (car (get 'org-format-latex-header 'standard-value))))
+      (newcommand "
+\\newcommand{\\fourier}[1]{\\mathcal{F}\\{#1\\}}
+\\newcommand{\\hilbert}[1]{\\mathcal{H}\\{#1\\}}")
+      (new-header (concat default-header newcommand)))
+  (setq org-format-latex-header new-header))
+#+end_src
+
+*** latex 预览的大小、颜色。
+#+BEGIN_SRC emacs-lisp
+(after! org
+  (plist-put! org-format-latex-options
+              :scale 2.2
+              ;; :background "Transparent"
+              ;; :html-background "Transparent"
+              ;; :foreground "White"
+              )
+  (setq org-preview-latex-default-process 'dvipng)
+  (setq-default org-startup-with-latex-preview nil) ; 是否启动时就预览latex.
+
+  ;; 修复 `org-preview-latex-fragment' 中的颜色处理
+  ;; https://github.com/hlissner/doom-emacs/issues/4023#issuecomment-735390477
+  ;; (let ((dvipng--plist (alist-get 'dvipng org-preview-latex-process-alist)))
+  ;;   ;; (plist-put dvipng--plist :use-xcolor t)
+  ;;   (plist-put dvipng--plist :image-converter '("dvipng -D %D -T tight -o %O %f"))
+  )
+#+END_SRC
+
+*** latex 快速输入快捷键设置
+https://emacs.stackexchange.com/questions/12552/how-bind-keys-to-a-specific-snippet-in-yasnippet-folder
+#+BEGIN_SRC emacs-lisp
+(defvar my-org-latex-delimiter-list '("inline" "display" "gather" "align")
+  "几种常见的 latex 分隔符样式，用于 `my-expand-yasnippet-org-latex-inline'。")
+(defvar my-org-latex-last-delimiter "inline"
+  "上一个分隔符样式")
+
+(defun my-org-latex-replace-delimiter (last-delimiter-list this-delimiter-list)
+  (let* ((last-search-cons (elt last-delimiter-list 0))
+         (this-replace-cons (elt this-delimiter-list 1))
+         (last-search-str-b (car last-search-cons))
+         (last-search-str-f (cdr last-search-cons))
+         (this-replace-str-b (car this-replace-cons))
+         (this-replace-str-f (cdr this-replace-cons))
+         )
+    (save-excursion
+      (search-backward last-search-str-b)
+      (replace-match this-replace-str-b)
+      )
+    (save-excursion
+      (search-forward last-search-str-f)
+      (replace-match this-replace-str-f)))
+  )
+
+(defun my-org-latex-get-delimiter-cons (delimiter-name)
+  "返回每种分隔符对应的搜索cons和替换cons（二者可能不同）。"
+  (cond ((equal delimiter-name "inline") (list (cons "\\(" "\\)") (cons "\\\\(" "\\\\)")))
+        ((equal delimiter-name "display") (list (cons "\\[" "\\]") (cons "\\\\[" "\\\\]")))
+        ((equal delimiter-name "gather") (list (cons "\\begin{gather*}
+"
+                                                     "\\end{gather*}")
+                                               (cons "\\\\begin{gather*}
+"
+                                                     "\\\\end{gather*}")))
+        ((equal delimiter-name "align") (list (cons "\\begin{align*}
+"
+                                                    "\\end{align*}")
+                                              (cons "\\\\begin{align*}
+"
+                                                    "\\\\end{align*}")))
+        )
+  )
+
+;;;###autoload
+(defun my-org-latex-start-math ()
+  "首先检查当前点到行首的字符串，判断要不要插入空格，然后进入`sis-inline-mode'并插入latex分隔符
+如果重复命令，会替换分隔符为 `my-org-latex-delimiter-list' 中的元素。"
+  (interactive)
+
+  (let* ((repeating-p (if (eq this-command last-command) t nil))
+         (last-index (seq-position my-org-latex-delimiter-list my-org-latex-last-delimiter))
+         (this-delimiter
+          (if repeating-p
+              ;; last-index 就是上一个分隔符在分隔符列表中的索引
+              (or
+               (when (eq (1- (length my-org-latex-delimiter-list)) last-index)
+                 (car my-org-latex-delimiter-list))
+               (elt my-org-latex-delimiter-list (1+ last-index)))
+            (car my-org-latex-delimiter-list)))
+         (str (buffer-substring (line-beginning-position) (point))))
+
+    (if (not repeating-p)
+        ;; 判断如果位于行首或者列表项目的起始，就不插入首空格
+        (progn
+          (if (or (equal str "")
+                  (string-match-p "\\(^\\(- \\|+ \\|[0-9]\\. \\| *\\)$\\)\\|\\(.*[。？；，]$\\)" str))
+              (progn (insert "\\")
+                     ;; 使用sis的英语模式
+                     (sis--inline-activate 'english (1- (point)))
+                     (insert "(\\) "))
+            (progn (insert " ")
+                   (sis--inline-activate 'english (1- (point)))
+                   (insert "\\(\\) ")))
+          (backward-char 3)
+          )
+      ;; 如果在重复命令，那么就替换分隔符
+      (my-org-latex-replace-delimiter
+       (my-org-latex-get-delimiter-cons my-org-latex-last-delimiter)
+       (my-org-latex-get-delimiter-cons this-delimiter)))
+    ;; 设置上一个分隔符，可用于下一次
+    (setq my-org-latex-last-delimiter this-delimiter)
+    )
+  )
+#+END_SRC
+
+https://emacs.stackexchange.com/questions/20240/how-to-distinguish-c-m-from-return/20241
+要使用 C-m 而非对应的 enter ，需要在 =input-decode-map= 中定义按键。
+#+BEGIN_SRC emacs-lisp
+(dolist (hook '(org-mode-hook LaTeX-mode-hook))
+  (add-hook hook
+            (lambda ()
+              (define-key input-decode-map [?\C-m] [C-m])
+              (local-set-key (kbd "<C-m>") #'my-org-latex-start-math)))
+  )
+#+END_SRC
+
+避免 orgmode 里列表中无法扩展数学公式的情况（暂不用，现在在使用 auto-snippet）
+#+BEGIN_SRC emacs-lisp
+;; (add-to-list 'org-tab-first-hook 'org-try-cdlatex-tab)
+#+END_SRC
+*** 预览图像宽度设置
+#+begin_src emacs-lisp
+(setq org-image-actual-width '(550))
+#+end_src
+*** bibtex-completion
+#+begin_src emacs-lisp
+(map! :leader
+      :prefix "f"
+      :desc "find article" "a" #'ivy-bibtex
+      )
+(setq ivy-bibtex-default-action 'ivy-bibtex-insert-citation)
+#+end_src
+*** biblio 模块的几个默认值：pdf 存放地、bibliography 文件、notes 存放地
+#+BEGIN_SRC emacs-lisp
+(setq! +biblio-pdf-library-dir "/home/klu/Downloads/_Literature/"
+       +biblio-default-bibliography-files '("~/_mybibliography/bibliography.bib")
+       +biblio-notes-path "~/org_notebooks/roam/public/")
+#+END_SRC
+*** org-roam 快捷键和默认目录
+快捷键、roam-directory 设置
+在 roam buffer 中不显示 tab、行号，开启 latex 预览。buffer 不自动打开。
+#+BEGIN_SRC emacs-lisp
+(use-package! org-roam
+  :commands (org-roam-find-file)
+  :init
+  (setq org-roam-directory "~/org_notebooks/roam")
+  (map! :leader
+        :prefix "n"
+        "l" #'org-roam
+        "i" #'org-roam-insert
+        "I" #'org-roam-insert-immediate
+        "f" #'org-roam-find-file
+        "c" #'org-roam-capture
+        )
+  (map! :leader
+        :prefix "i"
+        "b" #'orb-insert)
+  :config
+  ;; 在 roam buffer 中不显示 tab、行号，开启 latex 预览。buffer 不自动打开。
+  (add-hook 'org-roam-buffer-prepare-hook
+            (lambda nil
+              (display-line-numbers-mode 0)
+              (centaur-tabs-local-mode)
+              (org-latex-preview '(16)))
+            100)
+  (setq +org-roam-open-buffer-on-find-file nil)
+  )
+#+END_SRC
+*** org-roam-capture 模板设置
+#+BEGIN_SRC emacs-lisp
+(setq my-org-roam-public-file-name "./public/%<%Y%m%d%H%M%S>-${slug}")
+(setq my-org-roam-private-file-name "%<%Y%m%d%H%M%S>-${slug}")
+(setq org-roam-capture-immediate-template
+      `(:key "d"
+        :description "默认公共笔记"
+        :body "* 概括\n* 主要内容\n%?\n\n* 联系\n"
+        :file-name ,my-org-roam-public-file-name))
+
+(defvar my-org-roam-capture-format-list
+  `(
+    (
+     :key "d"
+     :description "默认公共笔记"
+     :body #'my-org-roam-capture-template
+     :file-name ,my-org-roam-public-file-name
+     )
+    (
+     :key "p"
+     :description "私有笔记"
+     :body #'my-org-roam-capture-template
+     :file-name ,my-org-roam-private-file-name
+     )
+    )
+  "org-roam capture的默认格式")
+
+(defun my-org-roam-capture-template ()
+  "template for my note"
+  (concat 
+   "* 主要内容\n%?\n"
+   "* 参考\n"
+   "%a"
+   "\n"
+   ))
+
+(setq org-roam-capture-templates
+      (let (templates)
+        (dolist (singlelist my-org-roam-capture-format-list templates)
+          (let ((template
+                 `(
+                   ,(plist-get singlelist :key) ,(plist-get singlelist :description)
+                   plain #'org-roam-capture--get-point
+                   ,(plist-get singlelist :body)
+                   :file-name ,(plist-get singlelist :file-name)
+                   :head ,(concat
+                           "#+title: ${title}\n#+roam_tags: "
+                           (plist-get singlelist :tags)
+                           "\n#+roam_alias: \n\n* 概括\n"
+                           )
+                   :unnarrowed t)))
+            ;; 在 templates 的后面添加
+            (setq templates (append templates `(,template)))
+            )
+          )
+        )
+      )
+
+(defun prompt-for-roam-tags-and-alias ()
+  (org-roam-tag-add)
+  (org-roam-alias-add)
+  nil)
+#+END_SRC
+
+#+RESULTS:
+: prompt-for-roam-tags-and-alias
+
+*** org-roam-server 设置
+#+BEGIN_SRC emacs-lisp
+(use-package! org-roam-server
+  :after org-roam
+  :config
+  (setq org-roam-server-host "127.0.0.1"
+        org-roam-server-port 9090
+        org-roam-server-authenticate nil
+        org-roam-server-export-inline-images t
+        ;; org-roam-server-serve-files nil
+        ;; org-roam-server-served-file-extensions '("pdf" "mp4" "ogv")
+        ;; org-roam-server-network-poll t
+        ;; org-roam-server-network-arrows nil
+        org-roam-server-network-label-truncate t
+        org-roam-server-network-label-truncate-length 60
+        org-roam-server-network-label-wrap-length 20)
+  )
+(org-roam-server-mode)
+#+END_SRC
+*** org-roam-bibtex
+模板，使用 orb-insert 的时候会被调用。
+#+begin_src emacs-lisp
+(defun my-orb-latex-note-to-org (citekey)
+  (let* ((entry (bibtex-completion-get-entry citekey))
+         (note (bibtex-completion-get-value "note" entry ""))
+         (pandoc-command "pandoc --from latex --to org")
+         result)
+    (with-temp-buffer
+      (shell-command (format "echo \"%s\" | %s" note pandoc-command)
+                     (current-buffer))
+      (setq result (buffer-substring-no-properties (point-min) (point-max))))))
+
+(setq orb-preformat-keywords '(
+                               ("citekey" . "=key=")
+                               "note"
+                               "title"
+                               "url"
+                               "file"
+                               "author-or-editor"
+                               "keywords"))
+(setq orb-templates
+      '(("r" "ref" plain (function org-roam-capture--get-point)
+         ""
+         :file-name "./public/${=key=}_${title}"
+         :head "#+TITLE: ${=key=}: ${title}
+,#+roam_key: ${ref}
+,#+roam_tags: lit
+- tags ::
+- keywords :: ${keywords}
+
+,* ${title}
+:PROPERTIES:
+:Custom_ID: ${=key=}
+:URL: ${url}
+:AUTHOR: ${author-or-editor}
+:NOTER_DOCUMENT: %(orb-process-file-field \"${=key=}\")
+:NOTER_PAGE:
+:END:
+
+,* Annotations (zotero)
+
+%(my-orb-latex-note-to-org \"${citekey}\")
+"
+         :unnarrowed t)))
+#+end_src
+
+参照 https://github.com/org-roam/org-roam-bibtex#orb-insert-link-description ，将插入的 bibtex 链接默认设置为 org-ref 引用格式。
+#+begin_src emacs-lisp
+(setq orb-insert-link-description 'citation)
+#+end_src
+*** org-roam 面板 delve
+#+begin_src emacs-lisp
+(use-package! delve
+  :bind (("<f12>" . delve-open-or-select))
+  :config
+  (evil-define-key* '(normal insert) delve-mode-map
+    (kbd "<return>") #'lister-key-action
+    (kbd "<tab>") #'delve-expand-toggle-sublist
+    (kbd "gr") #'delve-revert
+    (kbd "s") #'delve-sort-sublist
+    (kbd "<right>") #'delve-expand-insert-tolinks
+    (kbd "<left>")  #'delve-expand-insert-backlinks
+    (kbd "c") #'delve-collect
+    (kbd "q") #'delve-kill-buffer)
+  )
+(use-package! delve-minor-mode
+  :config
+  (add-hook 'org-mode-hook #'delve-minor-mode-maybe-activate)
+  )
+#+end_src
+*** org-roam CAPTURE popup 的大小
+#+begin_src emacs-lisp
+(set-popup-rule! "^CAPTURE-.*\\.org$" :side 'left :size 0.5 :quit nil :select t :autosave t)
+#+end_src
+*** Org-journal
+设置 journal 的时间戳格式为“年月日”
+carryover-items 添加 IDEA
+#+BEGIN_SRC emacs-lisp
+(use-package! org-journal
+  :init
+  (setq
+   org-journal-time-format "IDEA %Y%m%d "
+   org-journal-date-prefix "#+TITLE: "
+   org-journal-dir "~/org_notebooks/journal/"
+   org-journal-file-format "%Y-%m-%d.org"
+   org-journal-date-format "%A, %x"
+   org-journal-carryover-delete-empty-journal 'ask
+   )
+  :config
+  (setq org-journal-find-file #'find-file-other-window)
+  ;; 创建新条目的时候进入插入模式
+  (add-hook 'org-journal-after-entry-create-hook (lambda nil (evil-append 1)))
+  (setq org-journal-carryover-items "TODO=\"TODO\"|TODO=\"PROJ\"|TODO=\"IDEA\"")
+  )
+;; (setq org-journal-enable-agenda-integration t)
+#+END_SRC
+*** agenda 使用 org-super-agenda
+我使用 org-super-agenda 进行 GTD 的总体规划：
+
+首先在 org-journal 中记录 IDEA，在全局概览中要执行哪些 IDEA 就转换成 TODO，完成后转换为 DONE。
+
+使用 PROJ 的条目满足下列条件之一：
+- 该任务需要在其他任务完成之后才能完成
+
+对于需要在某个特定时间开始执行的任务（SCHEDULED 任务），使用 TODO 标识并设置开始时间。
+
+综上所述，只需要 IDEA、TODO、DONE、PROJ 四种标志。
+
+**** 设置 TODO 状态变成 DONE 的时候记录时间
+记录在 drawer 里面，把状态改变记录就放在标题下面，不放在 drawer 下面。
+#+begin_src emacs-lisp
+(setq org-log-done 'time
+      org-log-into-drawer t
+      org-log-state-notes-insert-after-drawers nil
+      org-agenda-start-with-log-mode t)
+#+end_src
+
+**** 自动设置标签、优先级等的函数
+参考
+https://github.com/jethrokuan/dots/blob/master/.doom.d/config.el
+https://github.com/jethrokuan/dots/blob/master/.doom.d/config.el#L279
+我把 refile 功能删了
+#+begin_src emacs-lisp
+(defvar jethro/org-current-effort "1:00"
+  "Current effort for agenda items.")
+
+(defun jethro/my-org-agenda-set-effort (effort)
+  "Set the effort property for the current headline."
+  (interactive
+   (list (read-string (format "Effort [%s]: " jethro/org-current-effort) nil nil jethro/org-current-effort)))
+  (setq jethro/org-current-effort effort)
+  (org-agenda-check-no-diary)
+  (let* ((hdmarker (or (org-get-at-bol 'org-hd-marker)
+                       (org-agenda-error)))
+         (buffer (marker-buffer hdmarker))
+         (pos (marker-position hdmarker))
+         (inhibit-read-only t)
+         newhead)
+    (org-with-remote-undo buffer
+      (with-current-buffer buffer
+        (widen)
+        (goto-char pos)
+        (org-show-context 'agenda)
+        (funcall-interactively 'org-set-effort nil jethro/org-current-effort)
+        (end-of-line 1)
+        (setq newhead (org-get-heading)))
+      (org-agenda-change-all-lines newhead hdmarker))))
+
+(defun jethro/org-agenda-process-inbox-item ()
+  "处理agenda中的各项，只处理优先级就够了"
+  (org-with-wide-buffer
+   ;; (org-agenda-set-tags)
+   (org-agenda-priority-up)
+   (org-agenda-priority-up)
+   ;; (call-interactively 'jethro/my-org-agenda-set-effort)
+   ))
+
+;; (defvar jethro/org-agenda-bulk-process-key ?f
+;;   "Default key for bulk processing inbox items.")
+
+(setq org-agenda-bulk-custom-functions '((?b jethro/org-agenda-process-inbox-item)))
+#+end_src
+
+**** 使用 super-agenda 的代码
+在[[file:~/doom-emacs/modules/lang/org/config.el::org-agenda-start-day][这里]] doom 对 agenda 的起始日期进行了自定义，所以下面需要 =(org-agenda-start-day "+0")=
+#+begin_src emacs-lisp
+(use-package! org-super-agenda
+  :commands (org-super-agenda-mode))
+(after! org-agenda
+  (org-super-agenda-mode))
+;; header 中使用 evil 快捷键问题https://github.com/alphapapa/org-super-agenda/issues/112#issuecomment-548224512
+(setq org-super-agenda-header-map nil)
+(setq org-agenda-skip-scheduled-if-done t
+      org-agenda-skip-deadline-if-done t
+      org-agenda-include-deadlines t
+      org-agenda-block-separator nil
+      org-agenda-tags-column 100 ;; from testing this seems to be a good value
+      org-agenda-compact-blocks t)
+(setq org-agenda-files '("~/org_notebooks/journal/"))
+(setq org-agenda-custom-commands
+      '(("o" "全局概览"
+         ((agenda "" ((org-agenda-span 1)
+                      (org-agenda-start-day "+0")
+                      ;; 注意这里，doom 对开始日期做了自定义，所以需要改回来
+                      (org-super-agenda-groups
+                       '((:name "今日安排" :time-grid t :date today :scheduled today :log (close clock) :order 1)
+                         (:name "已超期" :deadline past :face error :order 2)
+                         (:name "快到期了" :deadline today :deadline future :order 3)
+                         ))))
+          (alltodo "" ((org-agenda-overriding-header "")
+                       (org-super-agenda-groups
+                        '((:name "进行中" :todo "TODO" :order 1)
+                          (:name "优先级A" :priority "A" :order 2)
+                          (:name "当前上课和工作" :tag "当前上课和工作" :order 3)
+                          (:name "项目" :todo "PROJ" :order 6)
+                          ;; (:name "Essay 1" :tag "Essay1" :order 2)
+                          ;; (:name "Reading List" :tag "Read" :order 8)
+                          ;; (:name "Work In Progress" :tag "WIP" :order 5)
+                          ;; (:name "Blog" :tag "Blog" :order 12)
+                          ;; (:name "Essay 2" :tag "Essay2" :order 3)
+                          ;; (:name "Trivial" :priority<= "E" :tag ("Trivial" "Unimportant") :todo ("SOMEDAY" ) :order 90)
+                          ;; (:discard (:tag ("Chore" "Routine" "Daily")))
+                          ))))))))
+;; 使用 =SPC o o= 打开全局概览
+(map! :leader
+      :prefix "o"
+      :desc "agenda overview" "o" (lambda nil (interactive) (org-agenda nil "o")))
+#+end_src
+
+#+RESULTS:
+| lambda | nil | (interactive) | (org-agenda nil o) |
+**** 自动保存 agenda 浏览的文件
+每次退出 agenda view 的时候，自动保存所有 org buffer
+#+begin_src elisp
+(advice-add 'org-agenda-quit :before 'org-save-all-org-buffers)
+#+end_src
+
+*** org-noter
+#+begin_src emacs-lisp
+(setq
+      ;; org-noter-notes-window-location 'other-frame
+      org-noter-always-create-frame nil
+      org-noter-hide-other t
+      org-noter-notes-search-path (list "~/org_notebooks/roam/public/"))
+#+end_src
+*** org-babel python 设置默认 session，以及结果为 output
+设置 babel 的结果为 output 而非 value，也就是输出到 stdout 的东西。
+默认 session 名字是 =my_py_session= 。
+#+begin_src emacs-lisp
+(setq org-babel-default-header-args:python '((:session . "my_py_session") (:results . "output")))
+#+end_src
+*** 使用 C-b 进行加粗
+#+BEGIN_SRC emacs-lisp
+(defun org-emphasize-bold ()
+  "加粗。"
+  (interactive)
+  (org-emphasize ?\*))
+(map! :map org-mode-map
+      :v "C-b" 'org-emphasize-bold)
+#+END_SRC
+*** 关闭 ws-butler-mode
+#+begin_src emacs-lisp
+(add-hook 'org-mode-hook (lambda nil (ws-butler-mode -1)))
+#+end_src
+*** 使用 flameshot 进行 org-download 的截图
+#+begin_src emacs-lisp
+(use-package! org-download
+  :config
+  (setq org-download-screenshot-method "flameshot"))
+#+end_src
+** evil
+*** evil-pinyin
+#+BEGIN_SRC emacs-lisp
+(use-package! evil-pinyin
+  :after evil
+  :init
+  (setq-default evil-pinyin-scheme 'simplified-xiaohe-all)
+  (setq-default evil-pinyin-with-search-rule 'always)
+  :config
+  (global-evil-pinyin-mode t))
+#+END_SRC
+
+*** evil-textobj-line
+#+BEGIN_SRC emacs-lisp
+(use-package! evil-textobj-line
+  :after evil)
+#+END_SRC
+
+*** evil-escape
+#+BEGIN_SRC emacs-lisp
+(setq evil-escape-delay 0.4)
+(setq evil-escape-unordered-key-sequence t)
+#+END_SRC
+
+*** evil-snipe 关掉 s 键的 snipe 功能
+双字母匹配功能用不上，分配给 evil-embrace 用了。
+#+BEGIN_SRC emacs-lisp
+(after! evil-snipe
+  (evil-snipe-mode -1))
+#+END_SRC
+
+*** evil-org-special-o/O
+#+BEGIN_SRC emacs-lisp
+(setq evil-org-special-o/O '(table-row item))
+#+END_SRC
+*** evil-embrace evil-surround
+https://github.com/cute-jumper/evil-embrace.el
+evil-embrace 实际上是 embrace 包和 evil-surround 结合。限定某些按键使用 evil-surround，其余都是用 embrace。
+https://github.com/cute-jumper/embrace.el
+不想用大写 S，直接用小写 s 执行 =evil-surround-region=
+#+begin_src emacs-lisp
+(map! :map evil-visual-state-map
+      "s" 'evil-surround-region)
+#+end_src
+添加别的符号
+- 空格
+- latex 行内分隔符
+#+begin_src emacs-lisp :tangle no
+(add-hook 'text-mode-hook
+          (lambda ()
+            (embrace-add-pair ?  " " " ")))
+(add-hook 'org-mode-hook
+          (lambda ()
+            (embrace-add-pair ?m "\\(" "\\)")
+            (embrace-add-pair ?c "{{c1::" "}}")))
+#+end_src
+*** 插入模式粘贴快捷键 C-v
+#+begin_src emacs-lisp
+(map! :i "C-v" 'yank)
+#+end_src
+** 多光标 multiple-cursors, evil-mc
+使用 hydra 快捷键。参考资料：
+https://hungyi.net/posts/hydra-for-evil-mc/
+#+BEGIN_SRC emacs-lisp
+(defhydra my-mc-hydra (:color pink
+                       :hint nil
+                       :pre (evil-mc-pause-cursors))
+  "
+^Match^            ^Line-wise^           ^Manual^
+^^^^^^----------------------------------------------------
+_Z_: match all     _J_: make & go down   _z_: toggle here
+_m_: make & next   _K_: make & go up     _r_: remove last
+_M_: make & prev   ^ ^                   _R_: remove all
+_n_: skip & next   ^ ^                   _p_: pause/resume
+_N_: skip & prev
+
+Current pattern: %`evil-mc-pattern
+
+"
+  ("Z" #'evil-mc-make-all-cursors)
+  ("m" #'evil-mc-make-and-goto-next-match)
+  ("M" #'evil-mc-make-and-goto-prev-match)
+  ("n" #'evil-mc-skip-and-goto-next-match)
+  ("N" #'evil-mc-skip-and-goto-prev-match)
+  ("J" #'evil-mc-make-cursor-move-next-line)
+  ("K" #'evil-mc-make-cursor-move-prev-line)
+  ("z" #'+multiple-cursors/evil-mc-toggle-cursor-here)
+  ("r" #'+multiple-cursors/evil-mc-undo-cursor)
+  ("R" #'evil-mc-undo-all-cursors)
+  ("p" #'+multiple-cursors/evil-mc-toggle-cursors)
+  ("q" #'evil-mc-resume-cursors "quit" :color blue)
+  ("<escape>" #'evil-mc-resume-cursors "quit" :color blue))
+(map!
+ (:when (featurep! :editor multiple-cursors)
+  :prefix "g"
+  :nv "z" #'my-mc-hydra/body))
+#+END_SRC
+
+** auto-activating-snippets
+#+BEGIN_SRC emacs-lisp
+(use-package! laas
+  :hook (org-mode . laas-mode)
+  :config
+  (aas-set-snippets 'laas-mode
+                    :cond (lambda ()
+                            (or (org-inside-LaTeX-fragment-p)
+                                (texmathp))
+                            )
+                    ;; 范数
+                    "norm" (lambda () (interactive)
+                             (yas-expand-snippet "\\lVert $1 \\rVert $0"))
+                    ;; 内积
+                    "i*" (lambda () (interactive)
+                           (yas-expand-snippet "\\langle $1 \\rangle $0"))
+                    "sum" (lambda () (interactive)
+                            (yas-expand-snippet "\\sum_{${1:i=1}}^${2:\\infty} $0"))
+                    ;; "int" (lambda () (interactive)
+                    ;;         (yas-expand-snippet "\\int_${1:0}^${2:1} $0"))
+                    "sr" "^2 "
+                    "pw" (lambda () (interactive)
+                           (yas-expand-snippet "^\{$1} $0"))
+                    "lim" (lambda () (interactive)
+                            (yas-expand-snippet "\\lim\\limits\_{${1:n \\to \\infty}} $0"))
+                    "lrb" (lambda () (interactive)
+                            (yas-expand-snippet "\\left($1\\right)$0"))
+                    "sset" "\\subset "
+                    "too" "\\to"
+                    "noteq" "\\not= "
+                    "part" (lambda () (interactive)
+                             (yas-expand-snippet "\\frac{\\partial $1}{\\partial $2} $0"))
+                    "deri" (lambda () (interactive)
+                             (yas-expand-snippet "\\frac{d $1}{d $2} $0"))
+                    "bf" (lambda () (interactive)
+                             (yas-expand-snippet "\\mathbf{`%`}"))
+                    ;; bind to functions!
+                    )
+  )
+#+END_SRC
+
+** 自动 sippet（yasnippet）
+下面的 yasnippet 中的 auto snippet 方法来自
+https://github.com/joaotavora/yasnippet/issues/998#issuecomment-494438399
+#+BEGIN_SRC emacs-lisp 
+(defun my-yas-try-expanding-auto-snippets ()
+  (when (and (boundp 'yas-minor-mode) yas-minor-mode)
+    (let ((yas-buffer-local-condition ''(require-snippet-condition . auto)))
+      (yas-expand))))
+(add-hook 'post-self-insert-hook #'my-yas-try-expanding-auto-snippets)
+#+END_SRC
+
+** smart-input-source sis
+#+BEGIN_SRC emacs-lisp
+(use-package! sis
+  :init
+  ;; 不使用前缀自动切换英语模式的功能，因为会影响快捷键提示
+  (setq sis-prefix-override-keys nil)
+  :config
+  (add-to-list 'sis-respect-minibuffer-triggers
+             (cons 'org-roam-find-file (lambda () 'other)))
+  (add-to-list 'sis-respect-minibuffer-triggers
+               (cons 'org-roam-insert (lambda () 'other)))
+  (sis-ism-lazyman-config "1" "2" 'fcitx5)
+  ;; enable the /respect/ mode
+  (sis-global-respect-mode t)
+  ;; enable the /follow context/ mode for all buffers
+  (sis-global-context-mode t)
+  ;; enable the /inline english/ mode for all buffers
+  (sis-global-inline-mode t)
+  ;; 将sis-other-pattern的改动仅限于org-mode，从而不影响编程模式等
+  (add-hook 'org-mode-hook
+            (lambda nil
+              (setq-local
+               sis-other-pattern
+               "\\cc\\|*\\|:")))
+  (add-hook 'org-journal-mode-hook
+            (lambda nil
+              (setq-local
+               sis-other-pattern
+               "\\cc\\|*\\|\\.\\|[0-9]")))
+  (setq sis-inline-tighten-head-rule 0)
+  (setq sis-inline-tighten-tail-rule 0)
+  (setq sis-inline-single-space-close t)
+  )
+#+END_SRC
+
+设置某些命令中设置为中文。
+#+BEGIN_SRC emacs-lisp :tangle no
+(defun sis--minibuffer-setup-handler ()
+  "Handler for `minibuffer-setup-hook'."
+  (when sis-log-mode
+    (message "enter minibuffer: [%s]@current [%s]@last [%s]@command"
+             (current-buffer)
+             sis--buffer-before-command
+             this-command))
+  (if (or (string-equal "org-roam-find-file" (symbol-name this-command))
+          (string-equal "org-roam-insert" (symbol-name this-command))
+          (string-equal "org-roam-capture" (symbol-name this-command))
+          (string-equal "counsel-rg" (symbol-name this-command)))
+      (sis--set-other)
+    (sis--set-english))
+  )
+#+END_SRC
+
+设置 inline-mode 使用的颜色 
+#+begin_src emacs-lisp
+(set-face-attribute 'sis-inline-face nil :inverse-video nil :background "light blue" :foreground "black")
+#+end_src
+
+** centaur tabs 以及用外部程序打开文件或文件夹功能
+#+BEGIN_SRC emacs-lisp
+(use-package! centaur-tabs
+  :hook (doom-first-file . centaur-tabs-mode)
+  :init
+  (setq
+        centaur-tabs-set-icons nil
+        ;; centaur-tabs-gray-out-icons 'buffer
+        ;; centaur-tabs-close-button "✕"
+        centaur-tabs-set-close-button nil
+        centaur-tabs-set-modified-marker t
+        centaur-tabs-modified-marker "•")
+  :config
+  (centaur-tabs-change-fonts "Source Code Variable" 0.7)
+  ;; 模仿火狐中 VimiumC 的标签相关行为
+  (map! :nm "J" 'centaur-tabs-backward
+        :nm "K" 'centaur-tabs-forward
+        :nm "C-S-j" 'centaur-tabs-forward-group
+        :nm "C-S-k" 'centaur-tabs-backward-group
+        :nm "C-j" 'evil-join
+        :nmv "C-k" '+lookup/documentation
+        )
+  ;; (add-hook '+doom-dashboard-mode-hook #'centaur-tabs-local-mode)
+  (add-hook '+popup-buffer-mode-hook #'centaur-tabs-local-mode)
+  (add-hook 'org-src-mode-hook #'centaur-tabs-local-mode)
+  (add-hook 'pdf-view-mode-hook #'centaur-tabs-local-mode)
+  (centaur-tabs-group-by-projectile-project)
+  )
+#+END_SRC
+
+centaur-tab 的用外部程序打开的功能
+#+begin_src emacs-lisp
+(map! :leader
+      :prefix "o"
+      :desc "open buf-file externally" "x" 'centaur-tabs-open-in-external-application
+      :desc "open buf-folder externally" "d" 'centaur-tabs-open-directory-in-external-application)
+#+end_src
+
+** auctex 使用引擎 xetex
+#+BEGIN_SRC emacs-lisp
+(use-package! tex
+  :config
+  (setq-default TeX-engine 'xetex))
+#+END_SRC
+** pangu-spacing
+因为遇到属性中间也被加上空格的问题，所以把 org-mode 的插入真实空格的功能关了。
+helm 中不打开 pangu，主要为了 helm-bibtex
+#+BEGIN_SRC emacs-lisp
+(use-package! pangu-spacing
+  :config
+  (add-to-list 'pangu-spacing-inhibit-mode-alist 'helm-major-mode)
+  (global-pangu-spacing-mode 1)
+  )
+#+END_SRC
+** 关闭 orgmode 的 auto-format，设置只有 python 和 emacs-lisp 使用 format-on-save
+#+begin_src emacs-lisp
+(setq +format-on-save-enabled-modes
+      '(python-mode
+        emacs-lisp-mode)
+      )
+#+end_src
+** python 语言编程环境的设置
+#+begin_src emacs-lisp
+(setq lsp-pyright-venv-path "/home/klu/.virtualenvs/")
+#+end_src
+** hl-todo-mode 将 org-mode 也高亮 TODO
+默认 hl-todo 模块只打开了 prog-mode 的高亮，这里把 org-mode 的也打开
+可以使得 TODO 特殊显示
+#+begin_src emacs-lisp
+(add-hook 'org-mode-hook 'hl-todo-mode)
+#+end_src
+** anzu-query-replace 快捷键
+#+begin_src emacs-lisp
+(map! :leader
+      :prefix "s"
+      :desc "query-replace-regexp" "q" 'anzu-query-replace-regexp)
+#+end_src
+** anki-editor
+#+begin_src emacs-lisp
+(use-package! anki-editor
+  :init
+  (setq anki-editor-use-math-jax t)
+  :commands (anki-editor-mode)
+  )
+#+end_src
+** keyfreq 记录按键频率
+#+begin_src emacs-lisp
+(use-package! keyfreq
+  :config
+  (keyfreq-mode 1)
+  (keyfreq-autosave-mode 1)
+  (setq keyfreq-excluded-commands
+      '(
+        ;; 最常用的命令：插入和上下左右移动命令、滚轮、删除
+        self-insert-command
+        org-self-insert-command
+        forward-char
+        backward-char
+        evil-backward-char
+        evil-forward-word-end
+        previous-line
+        next-line
+        evil-previous-line
+        evil-next-line
+        dired-next-line
+        dired-previous-line
+        evil-previous-visual-line
+        evil-next-visual-line
+        evil-forward-char
+        ivy-next-line
+        ivy-previous-line
+        mwheel-scroll
+        backward-delete-char-untabify
+        ivy-backward-delete-char
+        
+        +popup/quit-window
+        sis-set-english
+        right-char
+        abort-recursive-edit
+        ivy-done
+        scroll-up-command
+        company-select-next
+        ;; evil 的经典命令 
+        evil-scroll-down
+        evil-scroll-page-down
+        evil-scroll-page-up
+        evil-normal-state
+        evil-delete-backward-char-and-join
+        evil-undo
+        evil-visual-char
+        evil-insert
+        evil-backward-word-begin)))
+#+end_src
+** smartparens 关掉
+#+begin_src emacs-lisp
+(add-hook 'org-mode-hook (lambda () (smartparens-mode -1)))
+#+end_src
+** c 语言相关 ccls
+#+BEGIN_SRC emacs-lisp
+(after! ccls
+  (setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
+  (set-lsp-priority! 'ccls 2)) ; optional as ccls is the default in Doom
+#+END_SRC
+** plantuml
+str1dfdfstr2
+dfdfds
+str2sdfddfstr1
+* 暂时不用的配置 
+** Emacs Application Framework
+这个包虽然感觉很有前景，但是现在感觉用起来不适应，先保留配置代码，不用。
+这个包在 package.el 中声明了之后无法正常与 eaf-evil 协同，所以就不声明而使用 load-path。
+#+BEGIN_SRC emacs-lisp :tangle no 
+(use-package! eaf
+  :load-path "~/.emacs.d/emacs-application-framework"
+  :custom
+  (eaf-find-alternate-file-in-dired t)
+  (eaf-proxy-type "http")
+  (eaf-proxy-host "localhost")
+  (eaf-proxy-port "8889")
+  ;; :bind (:map eaf-interleave-mode-map
+  ;;        ("M-." . 'eaf-interleave-sync-current-note)
+  ;;        ("M-p" . 'eaf-interleave-sync-previous-note)
+  ;;        ("M-n" . 'eaf-interleave-sync-next-note)
+  ;;        :map eaf-interleave-app-mode-map
+  ;;        ("C-c M-i" . 'eaf-interleave-add-note)
+  ;;        ("C-c M-o" . 'eaf-interleave-open-notes-file)
+  ;;        ("C-c M-q" . 'eaf-interleave-quit))
+  :config
+  ;; (add-hook 'eaf-pdf-viewer-hook 'eaf-interleave-app-mode)
+  ;; (add-hook 'eaf-browser-hook 'eaf-interleave-app-mode)
+  ;; (add-hook 'org-mode-hook 'eaf-interleave-mode)
+  ;; (setq eaf-interleave-org-notes-dir-list '("~/org_notebooks/"))
+  ;; (setq eaf-interleave-split-direction 'vertical)
+  ;; (setq eaf-interleave-disable-narrowing t)
+  ;; (setq eaf-interleave-split-lines 20)
+  (setq eaf-browser-continue-where-left-off t)
+  ;; (setq browse-url-browser-function 'eaf-open-browser)
+  ;; (defalias 'browse-web #'eaf-open-browser)
+  (eaf-setq eaf-browser-enable-adblocker "true")
+  ;; HTTP only
+  (eaf-setq eaf-browser-aria2-proxy-host "localhost")
+  (eaf-setq eaf-browser-aria2-proxy-port "8889")
+  (setq eaf-browser-default-search-engine "duckduckgo")
+  (eaf-setq eaf-browse-blank-page-url "https://duckduckgo.com")
+  (eaf-setq eaf-browser-default-zoom "1.7")
+  )
+(require 'eaf-evil)
+(use-package! eaf-org
+  :after eaf
+  :custom
+  (eaf-org-override-pdf-links t)
+  )
+#+END_SRC
+
+** pdf-tools
+这里的设置现在不用，因为有替代。
+#+BEGIN_SRC emacs-lisp :tangle no
+(add-load-path! "~/.emacs.d/pdf-tools-20200512.1524")
+
+(use-package! pdf-tools
+  :config
+  (require 'pdf-tools)
+  (require 'pdf-view)
+  (require 'pdf-misc)
+  (require 'pdf-occur)
+  (require 'pdf-util)
+  (require 'pdf-annot)
+  (require 'pdf-info)
+  (require 'pdf-isearch)
+  (require 'pdf-history)
+  (require 'pdf-links)
+  (require 'pdf-outline)
+  (require 'pdf-sync)
+  (pdf-tools-install :no-query)
+  )
+
+(use-package! org-pdftools
+  :hook (org-load . org-pdftools-setup-link))
+(use-package! org-noter-pdftools
+  :after org-noter
+  :config
+  (with-eval-after-load 'pdf-annot
+    (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
+#+END_SRC
+
+** （不用）meow
+#+begin_src emacs-lisp :tangle no
+(defun meow-setup ()
+  (add-to-list 'meow-normal-state-mode-list 'helpful-mode)
+  (setq meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+  (meow-motion-overwrite-define-key
+   '("j" . meow-next)
+   '("k" . meow-prev))
+  (meow-leader-define-key
+   ;; SPC j/k will run the original command in MOTION state.
+   '("j" . meow-motion-origin-command)
+   '("k" . meow-motion-origin-command)
+   ;; Use SPC (0-9) for digit arguments.
+   '("1" . meow-digit-argument)
+   '("2" . meow-digit-argument)
+   '("3" . meow-digit-argument)
+   '("4" . meow-digit-argument)
+   '("5" . meow-digit-argument)
+   '("6" . meow-digit-argument)
+   '("7" . meow-digit-argument)
+   '("8" . meow-digit-argument)
+   '("9" . meow-digit-argument)
+   '("0" . meow-digit-argument)
+   '("`" . meow-last-buffer))
+  (meow-normal-define-key
+   '("0" . meow-expand-0)
+   '("9" . meow-expand-9)
+   '("8" . meow-expand-8)
+   '("7" . meow-expand-7)
+   '("6" . meow-expand-6)
+   '("5" . meow-expand-5)
+   '("4" . meow-expand-4)
+   '("3" . meow-expand-3)
+   '("2" . meow-expand-2)
+   '("1" . meow-expand-1)
+   '("-" . negative-argument)
+   '(";" . meow-reverse)
+   '("," . meow-inner-of-thing)
+   '("." . meow-bounds-of-thing)
+   '("[" . meow-beginning-of-thing)
+   '("]" . meow-end-of-thing)
+   '("a" . meow-append)
+   '("A" . meow-open-below)
+   '("b" . meow-back-word)
+   '("B" . meow-back-symbol)
+   '("c" . meow-change)
+   '("C" . meow-change-save)
+   '("d" . meow-delete)
+   '("x" . meow-line)
+   '("f" . meow-find)
+   '("F" . meow-find-expand)
+   '("g" . meow-keyboard-quit)
+   '("G" . meow-goto-line)
+   '("h" . meow-left)
+   '("H" . meow-left-expand)
+   '("i" . meow-insert)
+   '("I" . meow-open-above)
+   '("m" . meow-join)
+   '("M" . delete-indentation)
+   '("s" . meow-kill)
+   '("t" . meow-till)
+   '("T" . meow-till-expand)
+   '("w" . meow-mark-word)
+   '("W" . meow-mark-symbol)
+   '("j" . meow-next)
+   '("J" . meow-next-expand)
+   '("o" . meow-block)
+   '("O" . meow-block-expand)
+   '("k" . meow-prev)
+   '("K" . meow-prev-expand)
+   '("q" . meow-quit)
+   '("r" . meow-replace)
+   '("R" . meow-replace-save)
+   '("n" . meow-search)
+   '("N" . meow-pop-search)
+   '("l" . meow-right)
+   '("L" . meow-right-expand)
+   '("u" . undo)
+   '("v" . meow-visit)
+   '("e" . meow-next-word)
+   '("E" . meow-next-symbol)
+   '("y" . meow-save)
+   '("p" . meow-yank)
+   '("z" . meow-pop-selection)
+   '("Z" . meow-pop-all-selection)
+   '("&" . meow-query-replace)
+   '("%" . meow-query-replace-regexp)
+   ))
+(use-package meow
+  ;; 如果你设置了 `use-package-always-defer'
+  :demand nil
+  :init
+  (meow-global-mode 1)
+  :config
+  ;; meow-setup 用于自定义按键绑定，可以直接使用下文中的示例
+  (meow-setup)
+  ;; 如果你需要在 NORMAL 下使用相对行号（基于 display-line-numbers-mode）
+  ;; (meow-setup-line-number)
+  ;; 如果你需要自动的 mode-line 设置（如果需要自定义见下文对 `meow-indicator' 说明）
+  (meow-setup-indicator))
+#+end_src
+** （不用）awesome-tray with anzu
+#+begin_src emacs-lisp :tangle no
+(use-package! awesome-tray
+  :config
+  (awesome-tray-mode 1)
+  (global-hide-mode-line-mode 1)
+  (setq awesome-tray-active-modules '(
+                                      ;; "last-command"
+                                      "location"
+                                      "battery"
+                                      "buffer-read-only"
+                                      ))
+  )
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+(use-package! anzu
+  :after-call isearch-mode)
+
+(use-package! evil-anzu
+  :when (featurep! :editor evil)
+  :after-call evil-ex-start-search evil-ex-start-word-search evil-ex-search-activate-highlight
+  :config (global-anzu-mode +1))
+  #+end_src
+
+** org-ref 
+#+BEGIN_SRC emacs-lisp :tangle no
+(after! org-ref
+  (setq bibtex-completion-notes-template-multiple-files
+        (concat
+         "#+TITLE: ${title}\n"
+         "#+ROAM_KEY: cite:${=key=}\n"
+         "* TODO Notes\n"
+         ":PROPERTIES:\n"
+         ":Custom_ID: ${=key=}\n"
+         ":NOTER_DOCUMENT: %(orb-process-file-field \"${=key=}\")\n"
+         ":AUTHOR: ${author-abbrev}\n"
+         ":JOURNAL: ${journaltitle}\n"
+         ":DATE: ${date}\n"
+         ":YEAR: ${year}\n"
+         ":DOI: ${doi}\n"
+         ":URL: ${url}\n"
+         ":END:\n\n"
+         )
+        ))
+
+(after! org-ref
+  (setq
+   org-ref-completion-library 'org-ref-ivy-cite
+   org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
+   org-ref-default-bibliography (list "/home/klu/_mybibliography/bibliography.bib")
+   org-ref-note-title-format (concat "* TODO %y - %t\n"
+                                     ":PROPERTIES:\n"
+                                     ":Custom_ID: %k\n"
+                                     ":NOTER_DOCUMENT: %F\n"
+                                     ":ROAM_KEY: cite:%k\n"
+                                     ":AUTHOR: %9a\n"
+                                     ":JOURNAL: %j\n"
+                                     ":YEAR: %y\n"
+                                     ":VOLUME: %v\n"
+                                     ":PAGES: %p\n"
+                                     ":DOI: %D\n"
+                                     ":URL: %U\n"
+                                     ":END:\n\n")
+   org-ref-notes-directory "/home/klu/org_notebooks/roam/"
+   org-ref-notes-function 'orb-edit-notes
+   ))
+#+END_SRC
+
+** org-noter-pdftools
+这里不用了，使用这个包无法插入笔记，有 bug，而 debug 太费时间。
+org-noter 自己已经有精确到行的插入笔记功能，这个包只不过添加了精确到空间坐标的插入笔记功能，也不是很必要。
+如果没有特殊需求，以后不会使用这个包。
+参考了 https://www.ianjones.us/org-roam-bibtex
+#+begin_src emacs-lisp :tangle no
+(use-package! org-noter-pdftools
+  :after org-noter
+  :config
+  (with-eval-after-load 'pdf-annot
+    (add-hook 'pdf-annot-activate-handler-functions #'org-noter-pdftools-jump-to-note)))
+#+end_src
+
+** 使用 org-latex-impatient
+使用 org-latex-impatient，用 mathjax 预览。
+#+begin_src emacs-lisp :tangle no
+(use-package! org-latex-impatient
+  :hook (org-mode . org-latex-impatient-mode)
+  :init
+  (setq org-latex-impatient-tex2svg-bin
+        ;; location of tex2svg executable
+        "~/node_modules/mathjax-node-cli/bin/tex2svg")
+  (setq org-latex-impatient-scale 2.7)
+  (setq org-latex-impatient-posframe-position 'point))
+#+end_src
+
+** org-marginalia 边注
+#+begin_src emacs-lisp :tangle no
+(add-hook 'after-init-hook
+          (lambda()
+            (require 'org-marginalia)
+            (setq org-marginalia-notes-file-path "/home/klu/org_notebooks/marginalia.org") 
+            (add-hook 'org-mode-hook #'org-marginalia-mode 1)
+            (map! :leader
+                  :desc "marginalia-annotate" "n m" (lambda (beg end) (interactive "r")
+                                                      (org-marginalia-mark beg end)
+                                                      (org-marginalia-save)
+                                                      (org-marginalia-open beg)))))
+#+end_src
+
+** insert-translated-name
+#+begin_src emacs-lisp :tangle no
+(use-package! insert-translated-name)
+(map! "C-c i" #'insert-translated-name-insert)
+(setq insert-translated-name-camel-style-mode-list '(python-mode))
+#+end_src

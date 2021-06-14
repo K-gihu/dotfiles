@@ -1,0 +1,7 @@
+# key: gather
+# name: latex-env-gather
+# condition: t
+# --
+\\begin{gather*}
+`%`
+\\end{gather*}

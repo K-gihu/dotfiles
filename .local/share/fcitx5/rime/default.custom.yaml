@@ -1,0 +1,14 @@
+patch:
+  "menu/page_size": 6
+  schema_list:
+    - schema: flypy
+    - schema: clover
+
+  key_binder:
+    bindings:
+    #详细说明有待撰写。
+      - {accept: "Control+k", send: Up, when: composing}
+      - {accept: "Control+j", send: Down, when: composing}
+      - {accept: "Control+g", send: Escape, when: composing}
+      - {accept: comma, send: Page_Up, when: paging} #逗号
+      - {accept: period, send: Page_Down, when: has_menu} #句号

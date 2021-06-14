@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: greek-letters
+# key: ;
+# condition: 'texmathp
+# --
+${1:;$(yas-choose-value '("\alpha" "\beta" "\gamma" "\lambda" "\epsilon"))}

@@ -1,0 +1,5 @@
+# key: ii
+# name: org-latex-inline
+# condition: 'auto
+# --
+\\(`%`$1\\) $0

@@ -1,0 +1,5 @@
+# key: four
+# name: fourier transform
+# condition: (and (or (texmathp) (org-inside-LaTeX-fragment-p)) 'auto)
+# --
+\\fourier\{`%`$1\}$0

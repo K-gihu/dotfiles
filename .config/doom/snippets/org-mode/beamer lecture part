@@ -1,0 +1,8 @@
+# key: lecture
+# name: beamer lecture part
+# --
+** 讲义 :B_ignoreheading:
+:PROPERTIES:
+:BEAMER_env: ignoreheading
+:END:
+$0
