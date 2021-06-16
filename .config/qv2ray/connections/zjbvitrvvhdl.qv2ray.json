@@ -1,0 +1,25 @@
+{
+    "outbounds": [
+        {
+            "mux": {
+            },
+            "protocol": "shadowsocksr",
+            "sendThrough": "0.0.0.0",
+            "settings": {
+                "address": "n48.boom.party",
+                "group": "SockBoom",
+                "method": "aes-256-cfb",
+                "obfs": "http_simple",
+                "obfs_param": "download.windowsupdate.com",
+                "password": "Uk92CS",
+                "port": 36000,
+                "protocol": "auth_aes128_sha1",
+                "protocol_param": "45758:w1eRDf",
+                "remarks": "【Tunnel_C】新加坡  VIP 6 - 阿里云"
+            },
+            "streamSettings": {
+            },
+            "tag": "outBound_PROXY"
+        }
+    ]
+}

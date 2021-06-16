@@ -1,0 +1,25 @@
+{
+    "outbounds": [
+        {
+            "mux": {
+            },
+            "protocol": "shadowsocksr",
+            "sendThrough": "0.0.0.0",
+            "settings": {
+                "address": "www.google.com",
+                "group": "SockBoom",
+                "method": "aes-256-cfb",
+                "obfs": "tls1.2_ticket_auth",
+                "obfs_param": "",
+                "password": "breakwall",
+                "port": 1,
+                "protocol": "auth_chain_a",
+                "protocol_param": "",
+                "remarks": "新网址：sockboom.lol"
+            },
+            "streamSettings": {
+            },
+            "tag": "outBound_PROXY"
+        }
+    ]
+}

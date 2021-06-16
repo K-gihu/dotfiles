@@ -1,0 +1,25 @@
+{
+    "outbounds": [
+        {
+            "mux": {
+            },
+            "protocol": "shadowsocksr",
+            "sendThrough": "0.0.0.0",
+            "settings": {
+                "address": "ntemp08.boom.party",
+                "group": "SockBoom",
+                "method": "aes-256-cfb",
+                "obfs": "http_simple",
+                "obfs_param": "download.windowsupdate.com",
+                "password": "Uk92CS",
+                "port": 17000,
+                "protocol": "auth_aes128_sha1",
+                "protocol_param": "45758:w1eRDf",
+                "remarks": "【Tunnel_B】香港 普通 8 - Azure"
+            },
+            "streamSettings": {
+            },
+            "tag": "outBound_PROXY"
+        }
+    ]
+}
