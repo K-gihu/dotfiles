@@ -1,11 +1,6 @@
 {
     "000000000000": {
         "connections": [
-            "zywmfiiabdge",
-            "zwdodlhbjqlz",
-            "qvajbrilbbho",
-            "kcqfrhvzsfvc",
-            "swyrcetqccvh",
             "iejfnzhikqfy",
             "vrggrxfuooet",
             "nimtkuisflnl",
@@ -186,10 +181,11 @@
         "creationDate": 1622771428,
         "displayName": "sockboom",
         "isSubscription": true,
-        "lastUpdatedDate": 1623370649,
+        "lastUpdatedDate": 1624087320,
         "routeConfigId": "tjaquhlrabno",
         "subscriptionOption": {
             "address": "https://sockboom.me/link/1DBuXZjIOrsEGBeI?mu=1",
+            "type": "simple_base64",
             "updateInterval": 5
         }
     }

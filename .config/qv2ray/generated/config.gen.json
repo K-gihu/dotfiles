@@ -1,11 +1,12 @@
 {
     "api": {
         "services": [
+            "ReflectionService",
             "HandlerService",
             "LoggerService",
             "StatsService"
         ],
-        "tag": "_QV2RAY_API_"
+        "tag": "QV2RAY_API"
     },
     "dns": {
         "servers": [
@@ -13,6 +14,10 @@
             "8.8.8.8",
             "8.8.4.4"
         ]
+    },
+    "fakedns": {
+        "ipPool": "198.18.0.0/15",
+        "poolSize": 65535
     },
     "inbounds": [
         {
@@ -24,16 +29,17 @@
             },
             "sniffing": {
             },
-            "tag": "_QV2RAY_API_INBOUND_"
+            "tag": "QV2RAY_API_INBOUND"
         },
         {
             "listen": "127.0.0.1",
             "port": 8889,
             "protocol": "http",
             "settings": {
+                "allowTransparent": true,
+                "timeout": 300
             },
             "sniffing": {
-                "enabled": false
             },
             "tag": "http_IN"
         },
@@ -44,11 +50,9 @@
             "settings": {
                 "auth": "noauth",
                 "ip": "127.0.0.1",
-                "udp": true,
-                "userLevel": 0
+                "udp": true
             },
             "sniffing": {
-                "enabled": false
             },
             "tag": "socks_IN"
         }
@@ -70,21 +74,18 @@
             },
             "streamSettings": {
             },
-            "tag": "outBound_PROXY"
+            "tag": "PROXY"
         },
         {
             "protocol": "freedom",
             "sendThrough": "0.0.0.0",
             "settings": {
                 "domainStrategy": "AsIs",
-                "redirect": ":0",
-                "userLevel": 0
+                "redirect": ":0"
             },
             "streamSettings": {
-                "kcpSettings": {
-                }
             },
-            "tag": "outBound_DIRECT"
+            "tag": "DIRECT"
         },
         {
             "protocol": "blackhole",
@@ -95,10 +96,8 @@
                 }
             },
             "streamSettings": {
-                "kcpSettings": {
-                }
             },
-            "tag": "outBound_BLACKHOLE"
+            "tag": "BLACKHOLE"
         }
     ],
     "policy": {
@@ -110,34 +109,44 @@
         }
     },
     "routing": {
-        "domainStrategy": "",
+        "domainMatcher": "mph",
+        "domainStrategy": "AsIs",
         "rules": [
             {
                 "inboundTag": [
-                    "_QV2RAY_API_INBOUND_"
+                    "QV2RAY_API_INBOUND"
                 ],
-                "outboundTag": "_QV2RAY_API_",
+                "outboundTag": "QV2RAY_API",
                 "type": "field"
             },
             {
                 "ip": [
                     "geoip:private"
                 ],
-                "outboundTag": "outBound_DIRECT",
+                "outboundTag": "DIRECT",
+                "type": "field"
+            },
+            {
+                "domain": [
+                    "emacs-china.org",
+                    "archlinuxcn.org",
+                    "book118.com"
+                ],
+                "outboundTag": "DIRECT",
                 "type": "field"
             },
             {
                 "ip": [
                     "geoip:cn"
                 ],
-                "outboundTag": "outBound_DIRECT",
+                "outboundTag": "DIRECT",
                 "type": "field"
             },
             {
                 "domain": [
                     "geosite:cn"
                 ],
-                "outboundTag": "outBound_DIRECT",
+                "outboundTag": "DIRECT",
                 "type": "field"
             }
         ]
