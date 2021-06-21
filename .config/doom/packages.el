@@ -23,6 +23,19 @@
 (package! color-rg
   :recipe (:host github :repo "manateelazycat/color-rg"))
 (package! centaur-tabs)
+(package! auto-save
+  :recipe (:host github :repo "manateelazycat/auto-save"))
+(package! wucuo)
+;; (package! pdf-continuous-scroll-mode
+;;   :recipe (:host github :repo "dalanicolai/pdf-continuous-scroll-mode.el"))
+
+(package! eaf
+  :recipe (:host github
+           :repo  "manateelazycat/emacs-application-framework"
+           :files ("*")))
+(package! ctable
+  :recipe (:host github :repo "kiwanami/emacs-ctable"))
+(package! epc)
 
 ;; (package! rime)
 ;; (package! eaf
