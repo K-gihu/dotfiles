@@ -35,4 +35,6 @@ ColorBackground=#2c2c2c
 ColorCursor=#dcdcdc
 ShortcutsNoHelpkey=TRUE
 ShortcutsNoMnemonics=TRUE
+ScrollingLines=2000
+FontUseSystem=TRUE
 
