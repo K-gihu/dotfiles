@@ -11,6 +11,6 @@
     <property name="volume" type="int" value="50"/>
   </property>
   <property name="folders" type="empty">
-    <property name="last-used-media" type="string" value="/home/klu"/>
+    <property name="last-used-media" type="string" value="/run/media/klu/old-arch/home/klu"/>
   </property>
 </channel>

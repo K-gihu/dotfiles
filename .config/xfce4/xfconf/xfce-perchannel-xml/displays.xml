@@ -23,14 +23,14 @@
     <property name="HDMI-1" type="string" value="Dell Inc. 19&quot;">
       <property name="Active" type="bool" value="true"/>
       <property name="EDID" type="string" value="ae9ccbf54f7477bd15544e8301cc5a7fe5696f24"/>
-      <property name="Resolution" type="string" value="1920x1080"/>
-      <property name="RefreshRate" type="double" value="60.000000"/>
+      <property name="Resolution" type="string" value="1440x900"/>
+      <property name="RefreshRate" type="double" value="59.887445"/>
       <property name="Rotation" type="int" value="0"/>
       <property name="Reflection" type="string" value="0"/>
       <property name="Primary" type="bool" value="false"/>
       <property name="Scale" type="empty">
-        <property name="X" type="double" value="1.000000"/>
-        <property name="Y" type="double" value="1.000000"/>
+        <property name="X" type="double" value="1.200000"/>
+        <property name="Y" type="double" value="1.200000"/>
       </property>
       <property name="Position" type="empty">
         <property name="X" type="int" value="1920"/>
@@ -59,14 +59,14 @@
     <property name="HDMI-1" type="string" value="Dell Inc. 19&quot;">
       <property name="Active" type="bool" value="true"/>
       <property name="EDID" type="string" value="ae9ccbf54f7477bd15544e8301cc5a7fe5696f24"/>
-      <property name="Resolution" type="string" value="1920x1080"/>
-      <property name="RefreshRate" type="double" value="60.000000"/>
+      <property name="Resolution" type="string" value="1440x900"/>
+      <property name="RefreshRate" type="double" value="59.887445"/>
       <property name="Rotation" type="int" value="0"/>
       <property name="Reflection" type="string" value="0"/>
       <property name="Primary" type="bool" value="false"/>
       <property name="Scale" type="empty">
-        <property name="X" type="double" value="1.000000"/>
-        <property name="Y" type="double" value="1.000000"/>
+        <property name="X" type="double" value="1.200000"/>
+        <property name="Y" type="double" value="1.200000"/>
       </property>
       <property name="Position" type="empty">
         <property name="X" type="int" value="1920"/>
@@ -134,14 +134,14 @@
     <property name="HDMI-1" type="string" value="Dell Inc. 19&quot;">
       <property name="Active" type="bool" value="true"/>
       <property name="EDID" type="string" value="ae9ccbf54f7477bd15544e8301cc5a7fe5696f24"/>
-      <property name="Resolution" type="string" value="1920x1080"/>
-      <property name="RefreshRate" type="double" value="60.000000"/>
+      <property name="Resolution" type="string" value="1440x900"/>
+      <property name="RefreshRate" type="double" value="59.887445"/>
       <property name="Rotation" type="int" value="0"/>
       <property name="Reflection" type="string" value="0"/>
       <property name="Primary" type="bool" value="false"/>
       <property name="Scale" type="empty">
-        <property name="X" type="double" value="1.000000"/>
-        <property name="Y" type="double" value="1.000000"/>
+        <property name="X" type="double" value="1.200000"/>
+        <property name="Y" type="double" value="1.200000"/>
       </property>
       <property name="Position" type="empty">
         <property name="X" type="int" value="1920"/>

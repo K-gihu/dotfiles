@@ -1,5 +1,5 @@
 favorites=xfce4-web-browser.desktop,xfce4-mail-reader.desktop,xfce4-file-manager.desktop,xfce4-terminal-emulator.desktop
-recent=mousepad.desktop,emacs.desktop,lstopo.desktop,thunar.desktop,fsearch.desktop,nutstore-menu.desktop,wps-office-wps.desktop,xfce4-dict.desktop,cups.desktop,firefox.desktop
+recent=zotero.desktop,iridium-browser.desktop,fsearch.desktop,xfce-settings-manager.desktop,mousepad.desktop,xfce4-terminal-settings.desktop,xfce4-terminal-emulator.desktop,emacs.desktop,timeshift-gtk.desktop,firefox.desktop
 button-icon=xfce4-whiskermenu
 button-single-row=false
 show-button-title=false

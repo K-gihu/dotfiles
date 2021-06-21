@@ -116,11 +116,11 @@
     <property name="plugin-20" type="string" value="fsguard"/>
     <property name="plugin-21" type="string" value="weather">
       <property name="location" type="empty">
-        <property name="name" type="string" value="沈阳市, 辽宁省"/>
-        <property name="latitude" type="string" value="41.674989"/>
-        <property name="longitude" type="string" value="123.458674"/>
+        <property name="name" type="string" value="西安市, 陕西省"/>
+        <property name="latitude" type="string" value="34.343051"/>
+        <property name="longitude" type="string" value="108.935215"/>
       </property>
-      <property name="msl" type="int" value="47"/>
+      <property name="msl" type="int" value="377"/>
       <property name="timezone" type="string" value="Asia/Shanghai"/>
       <property name="offset" type="string" value="+08:00"/>
       <property name="cache-max-age" type="int" value="172800"/>
