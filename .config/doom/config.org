@@ -1,7 +1,7 @@
 #+TITLE:   klu's Configuration
 #+DATE:    十月 17, 2020
 #+SINCE:   1.0
-#+STARTUP: inlineimages content
+#+STARTUP: content
 #+PROPERTY: header-args :tangle config.el
 
 * 使用的配置
@@ -298,14 +298,6 @@ emacs 中处理正则表达式的方法不受这个影响，这只影响 builder
         ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
       org-latex-classes)
 #+end_src
-*** latex 符号查看使用 pretty-mode，以及切换快捷键
-#+begin_src emacs-lisp
-(after! org
-  (add-hook 'org-mode-hook '+org-pretty-mode)
-  (map! :leader
-        :prefix "t"
-        :desc "pretty mode" "p" #'+org-pretty-mode))
-#+end_src
 *** latex 输入不使用 cdlatex
 #+begin_src emacs-lisp
 (use-package! org
@@ -313,13 +305,17 @@ emacs 中处理正则表达式的方法不受这个影响，这只影响 builder
   (remove-hook 'org-mode-hook 'org-cdlatex-mode) ;默认不使用cdlatex，我现在用auto-activating-snippets
   )
 #+end_src
-*** latex 预览的自定义数学命令
+*** latex预览默认开启
+#+begin_src elisp
+(setq org-startup-with-latex-preview t)
+#+end_src
+*** latex 预览header中添加自定义命令
 #+begin_src elisp
 (let* (
       (default-header (eval (car (get 'org-format-latex-header 'standard-value))))
       (newcommand "
-\\newcommand{\\fourier}[1]{\\mathcal{F}\\{#1\\}}
-\\newcommand{\\hilbert}[1]{\\mathcal{H}\\{#1\\}}")
+\\usepackage{bm}
+")
       (new-header (concat default-header newcommand)))
   (setq org-format-latex-header new-header))
 #+end_src
@@ -343,6 +339,10 @@ emacs 中处理正则表达式的方法不受这个影响，这只影响 builder
   ;;   (plist-put dvipng--plist :image-converter '("dvipng -D %D -T tight -o %O %f"))
   )
 #+END_SRC
+*** latex预览使用fragtog，快速切换预览和文本
+#+begin_src elisp
+(add-hook 'org-mode-hook (lambda () (org-fragtog-mode 1)))
+#+end_src
 
 *** latex 快速输入快捷键设置
 https://emacs.stackexchange.com/questions/12552/how-bind-keys-to-a-specific-snippet-in-yasnippet-folder
@@ -416,7 +416,7 @@ https://emacs.stackexchange.com/questions/12552/how-bind-keys-to-a-specific-snip
         ;; 判断如果位于行首或者列表项目的起始，就不插入首空格
         (progn
           (if (or (equal str "")
-                  (string-match-p "\\(^\\(- \\|+ \\|[0-9]\\. \\| *\\)$\\)\\|\\(.*[。？；，]$\\)" str))
+                  (string-match-p "\\(^\\(- \\|+ \\|[0-9]\\. \\| *\\)$\\)\\|\\(.*[。？：；，（\\ ]$\\)" str))
               (progn (insert "\\")
                      ;; 使用sis的英语模式
                      (sis--inline-activate 'english (1- (point)))
@@ -453,7 +453,11 @@ https://emacs.stackexchange.com/questions/20240/how-to-distinguish-c-m-from-retu
 #+END_SRC
 *** 预览图像宽度设置
 #+begin_src emacs-lisp
-(setq org-image-actual-width '(550))
+(setq org-image-actual-width '(450))
+#+end_src
+*** 预览图像，打开文件即预览
+#+begin_src elisp
+(setq org-startup-with-inline-images t)
 #+end_src
 *** bibtex-completion
 #+begin_src emacs-lisp
@@ -771,7 +775,7 @@ https://github.com/jethrokuan/dots/blob/master/.doom.d/config.el#L279
                       (org-agenda-start-day "+0")
                       ;; 注意这里，doom 对开始日期做了自定义，所以需要改回来
                       (org-super-agenda-groups
-                       '((:name "今日安排" :time-grid t :date today :scheduled today :log (close clock) :order 1)
+                       '((:name "今日时间表" :time-grid t :date today :scheduled today :log (close clock) :order 1)
                          (:name "已超期" :deadline past :face error :order 2)
                          (:name "快到期了" :deadline today :deadline future :order 3)
                          ))))
@@ -779,7 +783,9 @@ https://github.com/jethrokuan/dots/blob/master/.doom.d/config.el#L279
                        (org-super-agenda-groups
                         '((:name "进行中" :todo "TODO" :order 1)
                           (:name "优先级A" :priority "A" :order 2)
-                          (:name "当前上课和工作" :tag "当前上课和工作" :order 3)
+                          (:name "优先级B" :priority "B" :order 3)
+                          (:name "优先级C" :priority "C" :order 4)
+                          ;; (:name "当前上课和工作" :tag "当前上课和工作" :order 5)
                           (:name "项目" :todo "PROJ" :order 6)
                           ;; (:name "Essay 1" :tag "Essay1" :order 2)
                           ;; (:name "Reading List" :tag "Read" :order 8)
@@ -836,6 +842,11 @@ https://github.com/jethrokuan/dots/blob/master/.doom.d/config.el#L279
   :config
   (setq org-download-screenshot-method "flameshot"))
 #+end_src
+*** ox-rst，xref-rst reStructuredText相关
+#+begin_src emacs-lisp :tangle yes
+(require 'ox-rst)
+(require 'xref-rst)
+#+end_src
 ** evil
 *** evil-pinyin
 #+BEGIN_SRC emacs-lisp
@@ -871,6 +882,14 @@ https://github.com/jethrokuan/dots/blob/master/.doom.d/config.el#L279
 #+BEGIN_SRC emacs-lisp
 (setq evil-org-special-o/O '(table-row item))
 #+END_SRC
+*** 在orgmode中，o用来换行插入，O用来换行不插入
+evil-org-mode-hook 中有一个 =evil-normalize-keymaps= 会重新设置快捷键，所以需要将我自定义的快捷键放在它里面。
+#+begin_src elisp
+(add-hook 'evil-org-mode-hook
+          (lambda nil
+            (map! :map evil-org-mode-map
+                  :n "O" '+evil/insert-newline-below)))
+#+end_src
 *** evil-embrace evil-surround
 https://github.com/cute-jumper/evil-embrace.el
 evil-embrace 实际上是 embrace 包和 evil-surround 结合。限定某些按键使用 evil-surround，其余都是用 embrace。
@@ -934,33 +953,37 @@ Current pattern: %`evil-mc-pattern
   :nv "z" #'my-mc-hydra/body))
 #+END_SRC
 
-** auto-activating-snippets
-#+BEGIN_SRC emacs-lisp
+** laas latex-auto-activating-snippets
+#+BEGIN_SRC emacs-lisp :tangle yes
 (use-package! laas
   :hook (org-mode . laas-mode)
   :config
+  (setq laas-enable-auto-space nil)
   (aas-set-snippets 'laas-mode
                     :cond (lambda ()
-                            (or (org-inside-LaTeX-fragment-p)
-                                (texmathp))
+                            (or (org-inside-LaTeX-fragment-p))
                             )
+                    ";e" "\\varepsilon"
+                    "tan" "\\tan"
                     ;; 范数
                     "norm" (lambda () (interactive)
                              (yas-expand-snippet "\\lVert $1 \\rVert $0"))
                     ;; 内积
                     "i*" (lambda () (interactive)
-                           (yas-expand-snippet "\\langle $1 \\rangle $0"))
+                           (yas-expand-snippet "\\langle$1\\rangle$0"))
                     "sum" (lambda () (interactive)
                             (yas-expand-snippet "\\sum_{${1:i=1}}^${2:\\infty} $0"))
-                    ;; "int" (lambda () (interactive)
-                    ;;         (yas-expand-snippet "\\int_${1:0}^${2:1} $0"))
-                    "sr" "^2 "
+                    "int" (lambda () (interactive)
+                            (yas-expand-snippet (yas-lookup-snippet "int_^" 'org-mode)))
+                    "sr" "^2"
                     "pw" (lambda () (interactive)
                            (yas-expand-snippet "^\{$1} $0"))
                     "lim" (lambda () (interactive)
                             (yas-expand-snippet "\\lim\\limits\_{${1:n \\to \\infty}} $0"))
                     "lrb" (lambda () (interactive)
                             (yas-expand-snippet "\\left($1\\right)$0"))
+                    "lrlr" (lambda () (interactive)
+                             (yas-expand-snippet "\\left${1:|}$2\\right$1$0"))
                     "sset" "\\subset "
                     "too" "\\to"
                     "noteq" "\\not= "
@@ -968,30 +991,22 @@ Current pattern: %`evil-mc-pattern
                              (yas-expand-snippet "\\frac{\\partial $1}{\\partial $2} $0"))
                     "deri" (lambda () (interactive)
                              (yas-expand-snippet "\\frac{d $1}{d $2} $0"))
-                    "bf" (lambda () (interactive)
-                             (yas-expand-snippet "\\mathbf{`%`}"))
                     ;; bind to functions!
+                    :cond #'laas-object-on-left-condition
+                    ",." (lambda () (interactive) (laas-wrap-previous-object "bm"))
+                    ".," (lambda () (interactive) (laas-wrap-previous-object "bm"))
                     )
   )
 #+END_SRC
 
-** 自动 sippet（yasnippet）
-下面的 yasnippet 中的 auto snippet 方法来自
-https://github.com/joaotavora/yasnippet/issues/998#issuecomment-494438399
-#+BEGIN_SRC emacs-lisp 
-(defun my-yas-try-expanding-auto-snippets ()
-  (when (and (boundp 'yas-minor-mode) yas-minor-mode)
-    (let ((yas-buffer-local-condition ''(require-snippet-condition . auto)))
-      (yas-expand))))
-(add-hook 'post-self-insert-hook #'my-yas-try-expanding-auto-snippets)
-#+END_SRC
-
 ** smart-input-source sis
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 (use-package! sis
   :init
   ;; 不使用前缀自动切换英语模式的功能，因为会影响快捷键提示
   (setq sis-prefix-override-keys nil)
+  ;; 设置 inline-mode 使用的颜色
+  (set-face-attribute 'sis-inline-face nil :inverse-video nil :background "light blue" :foreground "black")
   :config
   (add-to-list 'sis-respect-minibuffer-triggers
              (cons 'org-roam-find-file (lambda () 'other)))
@@ -1020,29 +1035,6 @@ https://github.com/joaotavora/yasnippet/issues/998#issuecomment-494438399
   (setq sis-inline-single-space-close t)
   )
 #+END_SRC
-
-设置某些命令中设置为中文。
-#+BEGIN_SRC emacs-lisp :tangle no
-(defun sis--minibuffer-setup-handler ()
-  "Handler for `minibuffer-setup-hook'."
-  (when sis-log-mode
-    (message "enter minibuffer: [%s]@current [%s]@last [%s]@command"
-             (current-buffer)
-             sis--buffer-before-command
-             this-command))
-  (if (or (string-equal "org-roam-find-file" (symbol-name this-command))
-          (string-equal "org-roam-insert" (symbol-name this-command))
-          (string-equal "org-roam-capture" (symbol-name this-command))
-          (string-equal "counsel-rg" (symbol-name this-command)))
-      (sis--set-other)
-    (sis--set-english))
-  )
-#+END_SRC
-
-设置 inline-mode 使用的颜色 
-#+begin_src emacs-lisp
-(set-face-attribute 'sis-inline-face nil :inverse-video nil :background "light blue" :foreground "black")
-#+end_src
 
 ** centaur tabs 以及用外部程序打开文件或文件夹功能
 #+BEGIN_SRC emacs-lisp
@@ -1273,8 +1265,41 @@ str2sdfddfstr1
   (setq auto-save-silent t)
   (auto-save-enable))
 #+end_src
+** 使用pyim来在ivy 中使用拼音搜索
+似乎那种包含很多列的ivy-rich输出的东西，想要各个列都搜索的话，可以使用pyim-cregexp-ivy
+https://emacs-china.org/t/topic/6069/32
+#+begin_src elisp
+(use-package! pyim
+  :after ivy
+  :config
+  (setq ivy-re-builders-alist
+        '(
+          (counsel-rg . pyim-cregexp-ivy)
+          (swiper . pyim-cregexp-ivy)
+          (swiper-isearch . pyim-cregexp-ivy)
+          (org-roam-tag-add . pyim-cregexp-ivy)
+          (org-roam-alias-add . pyim-cregexp-ivy)
+          (t . ivy--regex-ignore-order)
+          )
+        ))
+#+end_src
+** hippie-exp用来使用文中任意文本补全
+#+begin_src emacs-lisp :tangle yes
+(map! "C-;" 'hippie-expand)
+#+end_src
 
 * 暂时不用的配置 
+** 自动 sippet（yasnippet）
+下面的 yasnippet 中的 auto snippet 方法来自
+https://github.com/joaotavora/yasnippet/issues/998#issuecomment-494438399
+#+BEGIN_SRC emacs-lisp :tangle no 
+(defun my-yas-try-expanding-auto-snippets ()
+  (when (and (boundp 'yas-minor-mode) yas-minor-mode)
+    (let ((yas-buffer-local-condition ''(require-snippet-condition . auto)))
+      (yas-expand))))
+(add-hook 'post-self-insert-hook #'my-yas-try-expanding-auto-snippets)
+#+END_SRC
+
 ** pdf-tools 使用pdf-continuous-scroll-mode添加连续阅读的功能
 #+begin_src elisp :tangle no
 (add-hook 'pdf-view-mode-hook 'pdf-continuous-scroll-mode)
@@ -1572,3 +1597,13 @@ org-noter 自己已经有精确到行的插入笔记功能，这个包只不过�
 (map! "C-c i" #'insert-translated-name-insert)
 (setq insert-translated-name-camel-style-mode-list '(python-mode))
 #+end_src
+
+** latex 符号查看使用 pretty-mode，以及切换快捷键
+#+begin_src emacs-lisp :tangle no
+(after! org
+  (add-hook 'org-mode-hook '+org-pretty-mode)
+  (map! :leader
+        :prefix "t"
+        :desc "pretty mode" "p" #'+org-pretty-mode))
+#+end_src
+    

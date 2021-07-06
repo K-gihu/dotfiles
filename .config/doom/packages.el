@@ -36,6 +36,9 @@
 (package! ctable
   :recipe (:host github :repo "kiwanami/emacs-ctable"))
 (package! epc)
+(package! ox-rst)
+(package! xref-rst)
+(package! pyim)
 
 ;; (package! rime)
 ;; (package! eaf

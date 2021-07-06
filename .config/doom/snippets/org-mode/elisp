@@ -4,6 +4,5 @@
 # uuid: elisp
 # --
 #+begin_src elisp
-`%`
+`%`$0
 #+end_src
-$0
